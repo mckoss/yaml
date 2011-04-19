@@ -17,5 +17,13 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         ut.equal();
     });
 
+    ut.test("parse", function () {
+        ut.deepEqual(yaml.parse("---\n- one\n- two"), ['one', 'two']);
+    });
+
+    ut.test("stringify", function () {
+        ut.equal(yaml.stringify(['one', 'two']), "---\n- one\n- two\n");
+    });
+
     coverage.testCoverage();
 });
