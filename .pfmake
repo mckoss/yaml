@@ -1,0 +1,9 @@
+{
+  "files": {
+    "yaml.js": [
+      "src/namespace-plus.js",
+      {"path": "src/yaml.js", "namespace": "org.startpad.yaml"}
+    ]
+  },
+  "minify": true
+}

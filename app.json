@@ -1,0 +1,14 @@
+{
+  "application": "yaml-js",
+  "cloneable": false,
+  "owner": "mckoss",
+  "readers": [
+    "public"
+  ],
+  "referers": [],
+  "secureData": false,
+  "tags": [],
+  "title": "YAML-js",
+  "url": "http://yaml-js.pageforest.com/",
+  "writers": []
+}
