@@ -1,0 +1,3 @@
+[submodule "test/online-yaml-parser"]
+	path = test/online-yaml-parser
+	url = https://github.com/ptarjan/online-yaml-parser.git
