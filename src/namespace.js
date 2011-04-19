@@ -6,7 +6,7 @@
 (function(global) {
     var globalNamespace = global['namespace'];
     var VERSION = '3.0.1';
-    
+
     function Module() {}
 
     function numeric(s) {

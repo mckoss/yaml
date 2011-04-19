@@ -362,5 +362,7 @@ function format(st, args, re) {
 });
 /* Source: src/yaml.js */
 namespace.module('org.startpad.yaml', function (exports, require) {
-
+exports.extend({
+    'VERSION': '0.1.0'
+});
 });
