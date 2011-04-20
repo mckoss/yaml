@@ -18,7 +18,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
     });
 
     ut.test("parse", function () {
-        ut.deepEqual(yaml.parse("---\n- one\n- two"), ['one', 'two']);
+        ut.deepEqual(yaml.parse("---\n- one\n- two")[0], ['one', 'two']);
     });
 
     ut.test("stringify", function () {

@@ -5,5 +5,5 @@
       {"path": "src/yaml.js", "namespace": "org.startpad.yaml"}
     ]
   },
-  "minify": true
+  "minify": false
 }
