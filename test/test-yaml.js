@@ -3,6 +3,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
     var utCoverage = require('org.startpad.qunit.coverage');
     var types = require('org.startpad.types');
     var yaml = require('org.startpad.yaml');
+    var testCases = require('org.startpad.yaml.test-cases');
 
     ut.module('org.startpad.yaml');
 
@@ -24,6 +25,15 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
 
     ut.test("stringify", function () {
         ut.equal(yaml.stringify(['one', 'two']), "---\n- one\n- two\n");
+    });
+
+    ut.test("spec tests", function () {
+       for (var name in testCases.tests) {
+           var test = testCases.tests[name];
+           var data = yaml.parse(test.yaml)[0];
+           var jsonText = JSON.stringify(data, undefined, 2);
+           ut.equal(jsonText, test.json, name);
+       }
     });
 
     coverage.testCoverage();
