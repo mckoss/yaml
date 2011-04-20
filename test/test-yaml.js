@@ -3,7 +3,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
     var utCoverage = require('org.startpad.qunit.coverage');
     var types = require('org.startpad.types');
     var yaml = require('org.startpad.yaml');
-    var testCases = require('org.startpad.yaml.test-cases');
+    var specTests = require('org.startpad.yaml.test-cases');
 
     ut.module('org.startpad.yaml');
 
@@ -18,22 +18,32 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         ut.equal();
     });
 
+    var tests = {
+        "sequence": {yaml: "---\n- one\n- two", data: ["one", "two"]},
+        "mapping": {yaml: "---\none: two", data: {"one": "two"}},
+        "nested sequence": {yaml: "- one\n - two\n- three",
+                            data: ["one", ["two"], "three"]}
+    };
+
     ut.test("parse", function () {
-        ut.deepEqual(yaml.parse("---\n- one\n- two")[0], ["one", "two"]);
-        ut.deepEqual(yaml.parse("---\none: two")[0], {"one": "two"});
+        testCases(tests);
+    });
+
+    ut.test("spec tests", function () {
+        testCases(specTests.tests);
     });
 
     ut.test("stringify", function () {
         ut.equal(yaml.stringify(['one', 'two']), "---\n- one\n- two\n");
     });
 
-    ut.test("spec tests", function () {
-       for (var name in testCases.tests) {
-           var test = testCases.tests[name];
+    coverage.testCoverage();
+
+    function testCases(tests) {
+       for (var name in tests) {
+           var test = tests[name];
            var data = yaml.parse(test.yaml)[0];
            ut.deepEqual(data, test.data, name);
        }
-    });
-
-    coverage.testCoverage();
+    }
 });
