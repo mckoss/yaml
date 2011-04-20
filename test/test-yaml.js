@@ -31,8 +31,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
        for (var name in testCases.tests) {
            var test = testCases.tests[name];
            var data = yaml.parse(test.yaml)[0];
-           var jsonText = JSON.stringify(data, undefined, 2);
-           ut.equal(jsonText, test.json, name);
+           ut.deepEqual(data, test.data, name);
        }
     });
 

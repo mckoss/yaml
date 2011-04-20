@@ -26,7 +26,7 @@ if __name__ == '__main__':
                 print "%s: Could not convert JSON" % filename
                 continue
 
-            tests[filename] = {'yaml': text, 'json': json_string}
+            tests[filename] = {'yaml': text, 'data': data}
 
     test_cases = open('test-cases.js', 'w')
     test_cases.write("namespace.module('org.startpad.yaml.test-cases', "
