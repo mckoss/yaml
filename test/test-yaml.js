@@ -22,7 +22,9 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         "sequence": {yaml: "---\n- one\n- two", data: ["one", "two"]},
         "mapping": {yaml: "---\none: two", data: {"one": "two"}},
         "nested sequence": {yaml: "- one\n - two\n- three",
-                            data: ["one", ["two"], "three"]}
+                            data: ["one", ["two"], "three"]},
+        "nested mapping": {yaml: "one:\n two: three",
+                           data: {"one": {"two": "three"}}}
     };
 
     ut.test("parse", function () {

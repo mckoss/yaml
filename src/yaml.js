@@ -84,6 +84,9 @@ Context.methods({
     },
 
     push: function (n) {
+        if (this.peek().open) {
+            this.json += ',';
+        }
         this.stack.push({indent: n});
     },
 
@@ -144,7 +147,7 @@ function jsonFromYaml(s) {
     for (var i = 0; i < lines.length; i++) {
         context.lineNumber = i + 1;
         var line = lines[i];
-        context.indent(indent(s));
+        context.indent(indent(line));
         line = line.slice(context.indent);
         line = line.replace(/#.*$/, '');
         line = strip(line);
