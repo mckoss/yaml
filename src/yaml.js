@@ -94,7 +94,20 @@ Context.methods({
     },
 
     value: function (value) {
-        this.json += '"' + value + '"';
+        try {
+            value = JSON.parse(value);
+            this.json += JSON.stringify(value);
+        } catch (e) {
+            this.string(value);
+        }
+    },
+
+    string: function (value) {
+        if (/^['"]/.test(value)) {
+            // BUG: Need to confirm parses as a valid string
+            this.json += value;
+        }
+        this.json += quote(value);
     },
 
     error: function (message) {
@@ -118,7 +131,7 @@ var tokens = [
 
     [/([^:]+) *: +([^ ]+)$/, function tagged(match) {
         this.ensureContainer('{', '}');
-        this.value(match[1]);
+        this.string(match[1]);
         this.json += ':';
         this.value(match[2]);
     }]
@@ -161,4 +174,8 @@ function indent(s) {
 
 function strip(s) {
     return (s || "").replace(/^\s+|\s+$/g, "");
+}
+
+function quote(s) {
+    return '"' + s.replace(/"/g, '\\"') + '"';
 }
