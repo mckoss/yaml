@@ -71,7 +71,7 @@ var tokens = [
         this.beginDoc();
      }],
 
-    [/^\.\.\.$/, function enddoc(match) {
+    [/^\.\.\.$/, function endDoc(match) {
         this.endDoc();
     }],
 
