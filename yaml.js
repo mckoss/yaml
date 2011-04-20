@@ -480,11 +480,11 @@ var tokens = [
         this.value(match[1]);
     }],
 
-    [/([^:]+) *: +[^ ]+$/, function tagged(match) {
+    [/([^:]+) *: +([^ ]+)$/, function tagged(match) {
         this.ensureContainer('{', '}');
-        this.value(match(1));
+        this.value(match[1]);
         this.json += ':';
-        this.value(match(2));
+        this.value(match[2]);
     }]
 ];
 
@@ -497,6 +497,8 @@ function jsonFromYaml(s) {
         var line = lines[i];
         context.indent(indent(s));
         line = line.slice(context.indent);
+        line = line.replace(/#.*$/, '');
+        line = strip(line);
 
         for (var t = 0; t < tokens.length; t++) {
             var match = tokens[t][0].exec(line);
@@ -519,5 +521,9 @@ function jsonFromYaml(s) {
 function indent(s) {
     var match = /^ */.exec(s);
     return match[0].length;
+}
+
+function strip(s) {
+    return (s || "").replace(/^\s+|\s+$/g, "");
 }
 });
