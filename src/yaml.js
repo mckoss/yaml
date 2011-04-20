@@ -1,6 +1,6 @@
 /* yaml.js - JavaScript YAML encoding and decoding.
 
-   MIT License by Mike Koss, April 2011
+   MIT Licensed by Mike Koss, April 2011
 */
 var types = require('org.startpad.types');
 require('org.startpad.funcs').patch();
@@ -38,8 +38,13 @@ Context.methods({
     initDoc: function () {
         this.json = '';
         this.stack = [];
-        this.indents = [];
-        this.lastIndent = 0;
+    },
+    
+    indent: function (n) {
+        while (this.peek().indent > n) {
+            this.pop();
+        }
+        this.indent = n;
     },
 
     beginDoc: function () {
@@ -56,9 +61,25 @@ Context.methods({
         this.docs.push(this.json);
         this.initDoc();
     },
+    
+    ensureContainer: function (open, close) {
+        if (this.indent > this.peek().indent) {
+            this.push(open, close);
+        }
+    },
+    
+    peek: function () {
+      return this.stack.slice(-1)[0];  
+    },
 
+    push: function (open, close) {
+        this.stack.push({indent: this.indent, open: open, close: close});
+    },
+    
     pop: function () {
-        this.json += this.stack.pop();
+        var top = this.stack.pop();
+        this.json += top.close;
+        this.lastIndent = top.indent;
     },
 
     value: function (value) {
@@ -76,19 +97,15 @@ var tokens = [
     }],
 
     [/^-[ \n](.*)$/, function element(match) {
-        if (this.indent > this.lastIndent) {
-            this.json += '[';
-            this.value(match[1]);
-            this.stack.push(']');
-            return;
-        }
-        if (this.stack.slice(-1)[0] != ']') {
-            this.json += '[';
-            this.stack.push(']');
-        } else {
-            this.json += ',';
-        }
+        this.ensureContainer('[', ']');
         this.value(match[1]);
+    }],
+    
+    [/([^:]+) *: +[^ ]+$/, function tagged(match) {
+        this.ensureContainer('{', '}');
+        this.value(match(1));
+        this.json += ':';
+        this.value(match(2));
     }]
 ];
 
@@ -98,8 +115,8 @@ function jsonFromYaml(s) {
 
     for (var i = 0; i < lines.length; i++) {
         var line = lines[i];
-        context.indent = indent(s);
-        line = line.slice(indent);
+        context.indent(indent(s));
+        line = line.slice(context.indent);
 
         for (var t = 0; t < tokens.length; t++) {
             var match = tokens[t][0].exec(line);
