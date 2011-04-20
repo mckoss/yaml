@@ -370,7 +370,7 @@ var types = require('org.startpad.types');
 require('org.startpad.funcs').patch();
 
 exports.extend({
-    'VERSION': '0.1.0',
+    'VERSION': '0.1.0r1',
     'parse': parse,
     'stringify': stringify
 });
@@ -408,7 +408,9 @@ Context.methods({
         while (this.peek().indent > n) {
             this.pop();
         }
-        this.indent = n;
+        if (n > this.peek().indent) {
+            this.push(n);
+        }
     },
 
     beginDoc: function () {
@@ -427,17 +429,26 @@ Context.methods({
     },
 
     ensureContainer: function (open, close) {
-        if (this.indent > this.peek().indent) {
-            this.push(open, close);
+        if (this.peek().open != undefined) {
+            if (this.peek().open == open) {
+                this.json += ',';
+                return;
+            }
+            this.error(this.peek().open + " not closed before " + open);
         }
+        this.json += open;
+        types.extend(this.peek(), {open: open, close: close});
     },
 
     peek: function () {
-      return this.stack.slice(-1)[0];
+        if (this.stack.length == 0) {
+            return {indent: -1};
+        }
+        return this.stack.slice(-1)[0];
     },
 
-    push: function (open, close) {
-        this.stack.push({indent: this.indent, open: open, close: close});
+    push: function (n) {
+        this.stack.push({indent: n});
     },
 
     pop: function () {
@@ -448,13 +459,17 @@ Context.methods({
 
     value: function (value) {
         this.json += '"' + value + '"';
+    },
+
+    error: function (message) {
+        throw new Error("Line " + this.lineNumber + ": " + message);
     }
 });
 
 var tokens = [
     [/^---$/, function beginDoc(match) {
         this.beginDoc();
-     }],
+    }],
 
     [/^\.\.\.$/, function endDoc(match) {
         this.endDoc();
@@ -478,6 +493,7 @@ function jsonFromYaml(s) {
     var lines = s.split('\n');
 
     for (var i = 0; i < lines.length; i++) {
+        context.lineNumber = i + 1;
         var line = lines[i];
         context.indent(indent(s));
         line = line.slice(context.indent);
