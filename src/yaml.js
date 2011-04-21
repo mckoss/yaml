@@ -19,7 +19,7 @@ function parse(s) {
             console.log("JSON: " + docs[i]);
             docs[i] = JSON.parse(docs[i]);
         } catch (e) {
-            docs[i] = e;
+            console.log("Failed to parse: " + e.message);
         }
     }
     return docs;
@@ -65,15 +65,20 @@ Context.methods({
     },
 
     ensureContainer: function (open, close) {
-        if (this.peek().open != undefined) {
-            if (this.peek().open == open) {
-                this.json += ',';
-                return;
-            }
-            this.error(this.peek().open + " not closed before " + open);
+        var top = this.peek();
+        if (top.open == undefined) {
+            types.extend(top, {open: open, close: close, children: 0});
+        } else if (top.open != open) {
+            this.error("Mismatched element - expect " + top.close + " before " + open);
         }
-        this.json += open;
-        types.extend(this.peek(), {open: open, close: close});
+
+        if (this.stack.length >= 2) {
+            if (this.stack.slice(-2, -1)[0].children > 0) {
+                this.json += ',';
+            }
+        }
+        this.json += top.children == 0 ? open : ',';
+        top.children++;
     },
 
     peek: function () {
@@ -84,9 +89,6 @@ Context.methods({
     },
 
     push: function (n) {
-        if (this.peek().open) {
-            this.json += ',';
-        }
         this.stack.push({indent: n});
     },
 
@@ -127,16 +129,22 @@ var tokens = [
         this.endDoc();
     }],
 
-    [/^-[ \n](.*)$/, function element(match) {
+    [/^-[ \n](.*)$/, function sequenceElement(match) {
         this.ensureContainer('[', ']');
         this.value(match[1]);
     }],
 
-    [/([^:]+) *: +([^ ]+)$/, function tagged(match) {
+    [/([^:]+) *: +([^ ]+)$/, function taggedElement(match) {
         this.ensureContainer('{', '}');
         this.string(match[1]);
         this.json += ':';
         this.value(match[2]);
+    }],
+
+    [/([^:]+) *:$/, function taggedObject(match) {
+        this.ensureContainer('{', '}');
+        this.string(match[1]);
+        this.json += ':';
     }]
 ];
 
