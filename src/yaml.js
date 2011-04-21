@@ -153,9 +153,14 @@ var tokens = [
         this.endDoc();
     }],
 
-    [/^-[ \n](.*)$/, function sequenceElement(match) {
+    [/^- +(.*)$/, function sequenceElement(match) {
         this.ensureContainer('[', ']');
         this.value(match[1]);
+    }],
+
+    [/^-$/, function sequenceElement(match) {
+        this.ensureContainer('[', ']');
+        this.push({state: 'value'});
     }],
 
     [/([^:]+) *: +([^ ]+)$/, function taggedElement(match) {

@@ -24,7 +24,9 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         "nested sequence": {yaml: "- one\n - two\n- three",
                             data: ["one", ["two"], "three"]},
         "nested mapping": {yaml: "one:\n two: three",
-                           data: {"one": {"two": "three"}}}
+                           data: {"one": {"two": "three"}}},
+        "hanging nested sequence": {yaml: "-\n - one\n-\n - two",
+                                    data: [["one"], ["two"]]}
     };
 
     ut.test("parse", function () {
