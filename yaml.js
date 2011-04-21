@@ -527,7 +527,7 @@ var tokens = [
         this.push({state: 'value'});
     }],
 
-    [/([^:]+) *: +([^ ]+)$/, function taggedElement(match) {
+    [/([^:]+) *: +(.+)$/, function taggedElement(match) {
         this.ensureContainer('{', '}');
         this.string(match[1]);
         this.json += ':';
