@@ -410,26 +410,25 @@ Context.methods({
     initDoc: function () {
         this.json = '';
         this.stack = [];
-        this.push({state: 'value'});
+        this.currentIndent = -1;
+        this.push({state: 'value', value: 'null'});
     },
 
     indent: function (n) {
+        this.currentIndent = n;
         while (this.peek().indent > n) {
             this.pop();
         }
-        if (this.peek().state == 'value') {
-            this.peek().indent = n;
-        } else if (n > this.peek().indent) {
-            if (this.peek().children > 0) {
-                this.json += ',';
-            }
-            this.push({indent: n, state: 'container'});
+
+        // Previous value was null - same indent line
+        if (this.peek().state == 'value' && this.peek().indent >= n) {
+            this.pop();
         }
     },
 
     beginDoc: function () {
         if (this.json != '') {
-            this.docs.push(json);
+            this.docs.push(this.json);
             this.initDoc();
         }
     },
@@ -445,26 +444,30 @@ Context.methods({
     ensureContainer: function (open, close) {
         var top = this.peek();
 
-        if (top.state == 'container' && top.children > 0) {
-            this.json += ',';
-        }
-
-        if (top.state == 'value') {
-            this.push({indent: top.indent, state: 'container'});
+        if (this.currentIndent > top.indent) {
+            this.addElement();
+            this.push({state: 'container', open: open, close: close, children: 0});
             top = this.peek();
-        }
-
-        // top.state == 'container'
-        if (top.open == undefined) {
-            types.extend(top, {open: open, close: close, children: 0});
         }
 
         if (top.open != open) {
             this.error("Mismatched element - expected " + top.close + " before " + open);
         }
 
-        if (top.children++ == 0) {
-            this.json += open;
+        this.addElement();
+    },
+
+    addElement: function() {
+        var top = this.peek();
+        switch (top.state) {
+        case 'value':
+            top.value = '';
+            break;
+        case 'container':
+            if (this.peek().children++ > 0) {
+                this.json += ',';
+                break;
+            }
         }
     },
 
@@ -476,6 +479,10 @@ Context.methods({
     },
 
     push: function(data) {
+        types.extend(data, {indent: this.currentIndent});
+        if (data.state == 'container') {
+            this.json += data.open;
+        }
         this.stack.push(data);
     },
 
@@ -483,6 +490,9 @@ Context.methods({
         var top = this.stack.pop();
         if (top.state == 'container') {
             this.json += top.close;
+        }
+        if (top.state == 'value') {
+            this.json += top.value;
         }
     },
 
@@ -522,9 +532,9 @@ var tokens = [
         this.value(match[1]);
     }],
 
-    [/^-$/, function sequenceElement(match) {
+    [/^-$/, function sequenceObject(match) {
         this.ensureContainer('[', ']');
-        this.push({state: 'value'});
+        this.push({state: 'value', value: 'null'});
     }],
 
     [/([^:]+) *: +(.+)$/, function taggedElement(match) {
@@ -538,7 +548,16 @@ var tokens = [
         this.ensureContainer('{', '}');
         this.string(match[1]);
         this.json += ':';
-        this.push({state: 'value'});
+        this.push({state: 'value', value: 'null'});
+    }],
+
+    [/^(.*)$/, function value(match) {
+        var top = this.peek();
+        if (top.state != 'value') {
+            this.error("Value seen when element expected.");
+        }
+        top.value = match[1];
+        this.pop();
     }]
 ];
 
