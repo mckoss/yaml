@@ -34,18 +34,32 @@ function Context() {
     this.initDoc();
 }
 
+// We keep a stack of nested state information during the parse.
+// States are one of:
+// 'value' - Excpecting a single value (scalar) at an indentation
+//    level higher than the parent.
+// 'container' - Expecting a child element to the parent.
+//    When in container mode:
+//    close: character used to close the container (']' or '}').
+//    children: number of elements in the containter
 Context.methods({
     initDoc: function () {
         this.json = '';
         this.stack = [];
+        this.push({state: 'value'});
     },
 
     indent: function (n) {
         while (this.peek().indent > n) {
             this.pop();
         }
-        if (n > this.peek().indent) {
-            this.push(n);
+        if (this.peek().state == 'value') {
+            this.peek().indent = n;
+        } else if (n > this.peek().indent) {
+            if (this.peek().children > 0) {
+                this.json += ',';
+            }
+            this.push({indent: n, state: 'container'});
         }
     },
 
@@ -66,19 +80,28 @@ Context.methods({
 
     ensureContainer: function (open, close) {
         var top = this.peek();
-        if (top.open == undefined) {
-            types.extend(top, {open: open, close: close, children: 0});
-        } else if (top.open != open) {
-            this.error("Mismatched element - expect " + top.close + " before " + open);
+
+        if (top.state == 'container' && top.children > 0) {
+            this.json += ',';
         }
 
-        if (this.stack.length >= 2) {
-            if (this.stack.slice(-2, -1)[0].children > 0) {
-                this.json += ',';
-            }
+        if (top.state == 'value') {
+            this.push({indent: top.indent, state: 'container'});
+            top = this.peek();
         }
-        this.json += top.children == 0 ? open : ',';
-        top.children++;
+
+        // top.state == 'container'
+        if (top.open == undefined) {
+            types.extend(top, {open: open, close: close, children: 0});
+        }
+
+        if (top.open != open) {
+            this.error("Mismatched element - expected " + top.close + " before " + open);
+        }
+
+        if (top.children++ == 0) {
+            this.json += open;
+        }
     },
 
     peek: function () {
@@ -88,14 +111,15 @@ Context.methods({
         return this.stack.slice(-1)[0];
     },
 
-    push: function (n) {
-        this.stack.push({indent: n});
+    push: function(data) {
+        this.stack.push(data);
     },
 
     pop: function () {
         var top = this.stack.pop();
-        this.json += top.close;
-        this.lastIndent = top.indent;
+        if (top.state == 'container') {
+            this.json += top.close;
+        }
     },
 
     value: function (value) {
@@ -145,6 +169,7 @@ var tokens = [
         this.ensureContainer('{', '}');
         this.string(match[1]);
         this.json += ':';
+        this.push({state: 'value'});
     }]
 ];
 
@@ -170,8 +195,6 @@ function jsonFromYaml(s) {
             fn.call(context, match);
             break;
         }
-
-        context.lastIndent = context.indent;
     }
     context.endDoc();
     return context.docs;
