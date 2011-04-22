@@ -187,7 +187,7 @@ var tokens = [
         this.push({state: 'value', value: 'null'});
     }],
 
-    [/^(.*)$/, function value(match) {
+    [/^(.+)$/, function value(match) {
         var top = this.peek();
         if (top.state != 'value') {
             this.error("Value seen when element expected.");
