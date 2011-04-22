@@ -32,7 +32,13 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         "hanging sequence value": {yaml: "-\n one",
                                    data: ["one"]},
         "hanging map value": {yaml: "one:\n two",
-                              data: {"one": "two"}}
+                              data: {"one": "two"}},
+        "flow sequence": {yaml: "[one, two, three]",
+                          data: ["one", "two", "three"]},
+        "flow map": {yaml: "{one: two}",
+                     data: {"one": "two"}},
+        "flow in sequence": {yaml: "- [one, two]\n- three",
+                             data: [["one", "two"], "three"]}
     };
 
     ut.test("parse", function () {
@@ -50,15 +56,16 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
     coverage.testCoverage();
 
     function testCases(tests) {
-       for (var name in tests) {
-           var test = tests[name];
-           try {
-               var data = yaml.parse(test.yaml)[0];
-           } catch (e) {
-               ut.ok(false, name + ": Exception: " + e.message);
-               continue;
-           }
-           ut.deepEqual(data, test.data, name);
-       }
+        var data;
+        for (var name in tests) {
+            var test = tests[name];
+            try {
+                data = yaml.parse(test.yaml)[0];
+            } catch (e) {
+                ut.ok(false, name + ": Exception: " + e.message);
+                continue;
+            }
+            ut.deepEqual(data, test.data, name);
+        }
     }
 });
