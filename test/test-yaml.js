@@ -18,7 +18,35 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         ut.equal();
     });
 
-    var tests = {
+    ut.test("token", function() {
+        var tests = [
+            ['hello: there', 'hello'],
+            ['hello there: 1', 'hello'],
+            ['this:is', 'this'],
+            ['this-is-a-test: 1', 'this-is-a-test'],
+            ['end}', 'end'],
+            ['end]', 'end'],
+            ['element ,', 'element'],
+            ['element,', 'element'],
+            ['tag : foo', 'tag'],
+            ['"tag" : foo', '"tag"'],
+            ['', null],
+            [' no spaces', null],
+            ['"hello": 1', '"hello"'],
+            ['"{}[],:": 1', '"{}[],:"'],
+            ['"hello\\"quote": 1', '"hello\\"quote"'],
+            ['"single\\\\slash"', '"single\\\\slash"'],
+            ["'single': 1", '"single"'],
+            ["'single\"quote': 1", '"single\\"quote"'],
+            ["'single\\slash'", '"single\\\\slash"']
+        ];
+        for (var i = 0; i < tests.length; i++) {
+            var test = tests[i];
+            ut.equal(yaml.token(test[0]), test[1]);
+        }
+    });
+
+    var simpleTests = {
         "sequence": {yaml: "---\n- one\n- two", data: ["one", "two"]},
         "mapping": {yaml: "---\none: two", data: {"one": "two"}},
         "nested sequence": {yaml: "- one\n - two\n- three",
@@ -42,7 +70,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
     };
 
     ut.test("parse", function () {
-        testCases(tests);
+        testCases(simpleTests);
     });
 
     ut.test("spec tests", function () {

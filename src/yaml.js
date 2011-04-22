@@ -8,7 +8,8 @@ require('org.startpad.funcs').patch();
 exports.extend({
     'VERSION': '0.1.0r1',
     'parse': parse,
-    'stringify': stringify
+    'stringify': stringify,
+    'token': token
 });
 
 // We always return an array of parsed documents.
@@ -178,7 +179,7 @@ var tokens = [
         this.ensureContainer('[', ']');
         this.push({state: 'value', value: 'null'});
     }],
-    
+
     [/([^:]+) *: +[{\[](.+)$/, function taggedFlow(match) {
         console.log("tagged FLOW");
     }],
@@ -196,7 +197,7 @@ var tokens = [
         this.json += ':';
         this.push({state: 'value', value: 'null'});
     }],
-    
+
     [/^[{\[](.*)$/, function valueFlow(match) {
         Console.log("valueFlow");
     }],
@@ -250,4 +251,29 @@ function strip(s) {
 
 function quote(s) {
     return '"' + s.replace(/"/g, '\\"') + '"';
+}
+
+function token(s, i) {
+    if (i == undefined) {
+        i = 0;
+    }
+    var match = /\s*([^\s:,\{\[\}\]\"])|"((?:[^\"]+|\\.)*)"/.exec(s);
+}
+
+var quoted = /^("(?:[^"\\]|\\.)*")/;
+var single = /^'((?:[^'])*)'/;
+var unquoted = /^([^\s{}\[\],:]+)/;
+
+function token(s) {
+    var match = quoted.exec(s);
+    if (match) {
+        return match[1];
+    }
+    match = single.exec(s);
+    if (match) {
+        match = match[1].replace('\\', '\\\\').replace('"', '\\"');
+        return '"' + match + '"';
+    }
+    match = unquoted.exec(s);
+    return match && match[1];
 }
