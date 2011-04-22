@@ -28,7 +28,11 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         "hanging nested sequence": {yaml: "-\n - one\n-\n - two",
                                     data: [["one"], ["two"]]},
         "empty node": {yaml: "- one\n-\n- two",
-                       data: ["one", null, "two"]}
+                       data: ["one", null, "two"]},
+        "hanging sequence value": {yaml: "-\n one",
+                                   data: ["one"]},
+        "hanging map value": {yaml: "one:\n two",
+                              data: {"one": "two"}}
     };
 
     ut.test("parse", function () {

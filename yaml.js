@@ -461,7 +461,7 @@ Context.methods({
         var top = this.peek();
         switch (top.state) {
         case 'value':
-            top.value = '';
+            top.value = undefined;
             break;
         case 'container':
             if (this.peek().children++ > 0) {
@@ -492,7 +492,9 @@ Context.methods({
             this.json += top.close;
         }
         if (top.state == 'value') {
-            this.json += top.value;
+            if (top.value != undefined) {
+                this.value(top.value);
+            }
         }
     },
 
