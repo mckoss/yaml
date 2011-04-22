@@ -165,6 +165,10 @@ var tokens = [
         this.endDoc();
     }],
 
+    [/^- +[{\[](.*)$/, function sequenceFlow(match) {
+        console.log("Seq FLOW");
+    }],
+
     [/^- +(.*)$/, function sequenceElement(match) {
         this.ensureContainer('[', ']');
         this.value(match[1]);
@@ -173,6 +177,10 @@ var tokens = [
     [/^-$/, function sequenceObject(match) {
         this.ensureContainer('[', ']');
         this.push({state: 'value', value: 'null'});
+    }],
+    
+    [/([^:]+) *: +[{\[](.+)$/, function taggedFlow(match) {
+        console.log("tagged FLOW");
     }],
 
     [/([^:]+) *: +(.+)$/, function taggedElement(match) {
@@ -187,6 +195,10 @@ var tokens = [
         this.string(match[1]);
         this.json += ':';
         this.push({state: 'value', value: 'null'});
+    }],
+    
+    [/^[{\[](.*)$/, function valueFlow(match) {
+        Console.log("valueFlow");
     }],
 
     [/^(.+)$/, function value(match) {
