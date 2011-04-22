@@ -52,7 +52,12 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
     function testCases(tests) {
        for (var name in tests) {
            var test = tests[name];
-           var data = yaml.parse(test.yaml)[0];
+           try {
+               var data = yaml.parse(test.yaml)[0];
+           } catch (e) {
+               ut.ok(false, name + ": Exception: " + e.message);
+               continue;
+           }
            ut.deepEqual(data, test.data, name);
        }
     }
