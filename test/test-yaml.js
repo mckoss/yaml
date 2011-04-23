@@ -30,8 +30,12 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
             ['element,', 'element'],
             ['tag : foo', 'tag'],
             ['"tag" : foo', '"tag"'],
-            ['', null],
-            [' no spaces', null],
+            ['', ''],
+            [' no spaces', ''],
+            ['- a token', '-'],
+            ['---', '---'],
+            ['...', '...'],
+            ['a.token: 1', 'a.token'],
             ['"hello": 1', '"hello"'],
             ['"{}[],:": 1', '"{}[],:"'],
             ['"hello\\"quote": 1', '"hello\\"quote"'],
@@ -42,7 +46,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         ];
         for (var i = 0; i < tests.length; i++) {
             var test = tests[i];
-            ut.equal(yaml.token(test[0]), test[1]);
+            ut.equal(yaml.parseToken(test[0]), test[1]);
         }
     });
 

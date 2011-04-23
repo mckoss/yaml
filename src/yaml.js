@@ -9,7 +9,7 @@ exports.extend({
     'VERSION': '0.1.0r1',
     'parse': parse,
     'stringify': stringify,
-    'token': token
+    'parseToken': parseToken
 });
 
 // We always return an array of parsed documents.
@@ -158,56 +158,56 @@ Context.methods({
 });
 
 var tokens = [
-    [/^---$/, function beginDoc(match) {
+    ['---', /^$/, function beginDoc(match) {
         this.beginDoc();
     }],
 
-    [/^\.\.\.$/, function endDoc(match) {
+    ['...', /^$/, function endDoc(match) {
         this.endDoc();
     }],
 
-    [/^- +[{\[](.*)$/, function sequenceFlow(match) {
+    ['-', /^(\{|\[.*)$/, function sequenceFlow(match) {
         console.log("Seq FLOW");
     }],
 
-    [/^- +(.*)$/, function sequenceElement(match) {
+    ['-', /^(.+)$/, function sequenceElement(match) {
         this.ensureContainer('[', ']');
         this.value(match[1]);
     }],
 
-    [/^-$/, function sequenceObject(match) {
+    ['-', /^$/, function sequenceObject(match) {
         this.ensureContainer('[', ']');
         this.push({state: 'value', value: 'null'});
     }],
 
-    [/([^:]+) *: +[{\[](.+)$/, function taggedFlow(match) {
+    [true, /^: +(\{|\[.+)$/, function taggedFlow(match, token) {
         console.log("tagged FLOW");
     }],
 
-    [/([^:]+) *: +(.+)$/, function taggedElement(match) {
+    [true, /^: +(.+)$/, function taggedElement(match, token) {
         this.ensureContainer('{', '}');
-        this.string(match[1]);
+        this.string(token);
         this.json += ':';
-        this.value(match[2]);
+        this.value(match[1]);
     }],
 
-    [/([^:]+) *:$/, function taggedObject(match) {
+    [true, /^:$/, function taggedObject(match, token) {
         this.ensureContainer('{', '}');
-        this.string(match[1]);
+        this.string(token);
         this.json += ':';
         this.push({state: 'value', value: 'null'});
     }],
 
-    [/^[{\[](.*)$/, function valueFlow(match) {
-        Console.log("valueFlow");
+    ['', /^(\{|\[.*)$/, function valueFlow(match) {
+        console.log("valueFlow");
     }],
 
-    [/^(.+)$/, function value(match) {
+    [true, /^$/, function value(match, token) {
         var top = this.peek();
         if (top.state != 'value') {
             this.error("Value seen when element expected.");
         }
-        top.value = match[1];
+        top.value = token;
         this.pop();
     }]
 ];
@@ -223,15 +223,25 @@ function jsonFromYaml(s) {
         line = line.slice(context.indent);
         line = line.replace(/#.*$/, '');
         line = strip(line);
+        if (line.length == 0) {
+            continue;
+        }
+
+        // Parse and remove prefix token
+        var token = parseToken(line);
+        line = strip(line.slice(token.length));
 
         for (var t = 0; t < tokens.length; t++) {
-            var match = tokens[t][0].exec(line);
+            if (!(tokens[t][0] === true || tokens[t][0] == token)) {
+                continue;
+            }
+            var match = tokens[t][1].exec(line);
             if (!match) {
                 continue;
             }
-            var fn = tokens[t][1];
+            var fn = tokens[t][2];
             console.log(types.getFunctionName(fn));
-            fn.call(context, match);
+            fn.call(context, match, token);
             break;
         }
     }
@@ -264,7 +274,7 @@ var quoted = /^("(?:[^"\\]|\\.)*")/;
 var single = /^'((?:[^'])*)'/;
 var unquoted = /^([^\s{}\[\],:]+)/;
 
-function token(s) {
+function parseToken(s) {
     var match = quoted.exec(s);
     if (match) {
         return match[1];
@@ -275,5 +285,8 @@ function token(s) {
         return '"' + match + '"';
     }
     match = unquoted.exec(s);
-    return match && match[1];
+    if (match) {
+        return match[1];
+    }
+    return '';
 }
