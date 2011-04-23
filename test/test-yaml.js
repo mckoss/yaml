@@ -46,13 +46,15 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         ];
         for (var i = 0; i < tests.length; i++) {
             var test = tests[i];
-            ut.equal(yaml.parseToken(test[0]), test[1]);
+            var parsed = yaml.parseToken(test[0]);
+            ut.equal(parsed.match, test[1]);
         }
     });
 
     var simpleTests = {
         "sequence": {yaml: "---\n- one\n- two", data: ["one", "two"]},
         "mapping": {yaml: "---\none: two", data: {"one": "two"}},
+        "quoted mapping": {yaml: "one: 'value\"quote'", data: {"one": 'value"quote'}},
         "nested sequence": {yaml: "- one\n - two\n- three",
                             data: ["one", ["two"], "three"]},
         "nested mapping": {yaml: "one:\n two: three",

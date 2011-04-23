@@ -510,8 +510,13 @@ Context.methods({
 
     string: function (value) {
         if (/^['"]/.test(value)) {
+            var parsed = parseToken(value);
+            if (parsed.len != value.length) {
+                this.error("Ill-formed string: ->" + value + "<-");
+            }
             // BUG: Need to confirm parses as a valid string
-            this.json += value;
+            this.json += parsed.match;
+            return;
         }
         this.json += quote(value);
     },
@@ -592,8 +597,9 @@ function jsonFromYaml(s) {
         }
 
         // Parse and remove prefix token
-        var token = parseToken(line);
-        line = strip(line.slice(token.length));
+        var parsed = parseToken(line);
+        var token = parsed.match;
+        line = strip(line.slice(parsed.len));
 
         for (var t = 0; t < tokens.length; t++) {
             if (!(tokens[t][0] === true || tokens[t][0] == token)) {
@@ -641,17 +647,17 @@ var unquoted = /^([^\s{}\[\],:]+)/;
 function parseToken(s) {
     var match = quoted.exec(s);
     if (match) {
-        return match[1];
+        return {len: match[1].length, match: match[1]};
     }
     match = single.exec(s);
     if (match) {
-        match = match[1].replace('\\', '\\\\').replace('"', '\\"');
-        return '"' + match + '"';
+        var match2 = match[1].replace('\\', '\\\\').replace('"', '\\"');
+        return {len: match[1].length + 2, match: '"' + match2 + '"'};
     }
     match = unquoted.exec(s);
     if (match) {
-        return match[1];
+        return {len: match[1].length, match: match[1]};
     }
-    return '';
+    return {len: 0, match: ''};
 }
 });
