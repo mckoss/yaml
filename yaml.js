@@ -521,6 +521,30 @@ Context.methods({
         this.json += quote(value);
     },
 
+    parseFlow: function (s) {
+        var isMap = s[0] == '{';
+        var end = isMap ? '}' : ']';
+        var parsed;
+        while (s[0] != end) {
+            this.json += s[0];
+            s = strip(s.slice(1));
+            if (isMap) {
+                parsed = parseToken(s);
+                this.string(parsed.match);
+                s = strip(s.slice(parsed.len));
+                if (s[0] != ':') {
+                    this.error("Missing ':' separator.");
+                }
+                this.json += ':';
+                s = strip(s.slice(1));
+            }
+            parsed = parseToken(s);
+            this.value(parsed.match);
+            s = strip(s.slice(parsed.len));
+        }
+        this.json += end;
+    },
+
     error: function (message) {
         throw new Error("Line " + this.lineNumber + ": " + message);
     }
@@ -536,7 +560,8 @@ var tokens = [
     }],
 
     ['-', /^(\{|\[.*)$/, function sequenceFlow(match) {
-        console.log("Seq FLOW");
+        this.ensureContainer('[', ']');
+        this.parseFlow(match[1]);
     }],
 
     ['-', /^(.+)$/, function sequenceElement(match) {
@@ -550,7 +575,10 @@ var tokens = [
     }],
 
     [true, /^: +(\{|\[.+)$/, function taggedFlow(match, token) {
-        console.log("tagged FLOW");
+        this.ensureContainer('{', '}');
+        this.string(token);
+        this.json += ':';
+        this.parseFlow(match[1]);
     }],
 
     [true, /^: +(.+)$/, function taggedElement(match, token) {
@@ -568,7 +596,8 @@ var tokens = [
     }],
 
     ['', /^(\{|\[.*)$/, function valueFlow(match) {
-        console.log("valueFlow");
+        this.parseFlow(match[1]);
+        this.pop();
     }],
 
     [true, /^$/, function value(match, token) {
