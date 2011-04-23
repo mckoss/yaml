@@ -195,7 +195,7 @@ var tokens = [
         this.endDoc();
     }],
 
-    ['-', /^(\{|\[.*)$/, function sequenceFlow(match) {
+    ['-', /^([\{\[].*)$/, function sequenceFlow(match) {
         this.ensureContainer('[', ']');
         this.parseFlow(match[1]);
     }],
@@ -210,7 +210,7 @@ var tokens = [
         this.push({state: 'value', value: 'null'});
     }],
 
-    [true, /^: +(\{|\[.+)$/, function taggedFlow(match, token) {
+    [true, /^: +([\{\[].+)$/, function taggedFlow(match, token) {
         this.ensureContainer('{', '}');
         this.string(token);
         this.json += ':';
@@ -231,7 +231,7 @@ var tokens = [
         this.push({state: 'value', value: 'null'});
     }],
 
-    ['', /^(\{|\[.*)$/, function valueFlow(match) {
+    ['', /^([\{\[].*)$/, function valueFlow(match) {
         this.parseFlow(match[1]);
         this.peek().value = undefined;
         this.pop();
