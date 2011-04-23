@@ -163,20 +163,20 @@ Context.methods({
         var parsed;
         while (s[0] != end) {
             this.json += s[0];
-            s = strip(s.slice(1));
+            s = s.slice(1);
             if (isMap) {
                 parsed = parseToken(s);
                 this.string(parsed.match);
-                s = strip(s.slice(parsed.len));
+                s = s.slice(parsed.len);
                 if (s[0] != ':') {
                     this.error("Missing ':' separator.");
                 }
                 this.json += ':';
-                s = strip(s.slice(1));
+                s = s.slice(1);
             }
             parsed = parseToken(s);
             this.value(parsed.match);
-            s = strip(s.slice(parsed.len));
+            s = s.slice(parsed.len);
         }
         this.json += end;
     },
@@ -233,6 +233,7 @@ var tokens = [
 
     ['', /^(\{|\[.*)$/, function valueFlow(match) {
         this.parseFlow(match[1]);
+        this.peek().value = undefined;
         this.pop();
     }],
 
@@ -305,23 +306,29 @@ function token(s, i) {
     var match = /\s*([^\s:,\{\[\}\]\"])|"((?:[^\"]+|\\.)*)"/.exec(s);
 }
 
-var quoted = /^("(?:[^"\\]|\\.)*")/;
-var single = /^'((?:[^'])*)'/;
-var unquoted = /^([^\s{}\[\],:]+)/;
+var reserved = /^\s*(-|---|\.\.\.)\s+/;
+var quoted = /^\s*("(?:[^"\\]|\\.)*")\s*/;
+var single = /^\s*'((?:[^'])*)'\s*/;
+var unquoted = /^\s*([^{}\[\],:]+)\s*/;
 
 function parseToken(s) {
-    var match = quoted.exec(s);
+    var match;
+    match = reserved.exec(s);
     if (match) {
-        return {len: match[1].length, match: match[1]};
+        return {len: match[0].length, match: match[1]};
+    }
+    match = quoted.exec(s);
+    if (match) {
+        return {len: match[0].length, match: match[1]};
     }
     match = single.exec(s);
     if (match) {
         var match2 = match[1].replace('\\', '\\\\').replace('"', '\\"');
-        return {len: match[1].length + 2, match: '"' + match2 + '"'};
+        return {len: match[0].length, match: '"' + match2 + '"'};
     }
     match = unquoted.exec(s);
     if (match) {
-        return {len: match[1].length, match: match[1]};
+        return {len: match[0].length, match: strip(match[1])};
     }
     return {len: 0, match: ''};
 }

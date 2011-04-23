@@ -21,7 +21,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
     ut.test("token", function() {
         var tests = [
             ['hello: there', 'hello'],
-            ['hello there: 1', 'hello'],
+            ['hello there: 1', 'hello there'],
             ['this:is', 'this'],
             ['this-is-a-test: 1', 'this-is-a-test'],
             ['end}', 'end'],
@@ -31,7 +31,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
             ['tag : foo', 'tag'],
             ['"tag" : foo', '"tag"'],
             ['', ''],
-            [' no spaces', ''],
+            [' yes spaces', 'yes spaces'],
             ['- a token', '-'],
             ['---', '---'],
             ['...', '...'],
