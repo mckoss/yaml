@@ -435,10 +435,17 @@ Context.methods({
     },
 
     nextToken: function () {
-        var parsed = parseToken(this.line);
-        var token = parsed.match;
-        this.line = strip(this.line.slice(parsed.len));
-        return token;
+        while (true) {
+            var parsed = parseToken(this.line);
+            var token = parsed.match;
+            this.line = this.line.slice(parsed.len);
+            if (token != '') {
+                return token;
+            }
+            if (!this.readLine()) {
+                return '';
+            }
+        }
     },
 
     readDocs: function() {
@@ -568,44 +575,36 @@ Context.methods({
         this.json += quote(value);
     },
 
-    parseFlow: function (s) {
-        this.line = s;
-        var isMap = s[0] == '{';
+    parseFlow: function (token) {
+        var isMap = token == '{';
         var end = isMap ? '}' : ']';
-        var parsed;
-        this.json += s[0];
-        s = s.slice(1);
-        while (s[0] != end) {
+
+        this.json += token;
+        token = this.nextToken();
+
+        while (token != end) {
             if (isMap) {
-                parsed = parseToken(s);
-                this.string(parsed.match);
-                s = s.slice(parsed.len);
-                if (s[0] != ':') {
-                    this.error("Missing ':' character.");
+                this.string(token);
+                if (this.nextToken() != ':') {
+                    this.error("Missing ':' character in flow mapping.");
                 }
                 this.json += ':';
-                s = s.slice(1);
+                token = this.nextToken();
             }
-            if (/^\s*[\{\[]/.test(s)) {
-                this.parseFlow(s);
+            if (token == '{' || token == '[') {
+                this.parseFlow(token);
             } else {
-                parsed = parseToken(s);
-                this.value(parsed.match);
-                s = s.slice(parsed.len);
+                this.value(token);
             }
-            if (s.length == 0) {
-                if (!this.readLine()) {
-                    this.error("Missing '" + end + "' character.");
-                }
-                s = this.line;
-                continue;
-            }
-            if (s[0] == ',') {
+            token = this.nextToken();
+            if (token == ',') {
                 this.json += ',';
+            } else if (token != end) {
+                this.error("Missing ',' character in flow.");
             }
+            token = this.nextToken();
         }
         this.json += end;
-        this.line = s.slice(1);
     },
 
     error: function (message) {
@@ -658,8 +657,14 @@ var tokens = [
         this.push({state: 'value', value: 'null'});
     }],
 
-    ['', /^([\{\[].*)$/, function valueFlow(match) {
-        this.parseFlow(match[1]);
+    ['[', /^(.*)$/, function valueFlowSeq(match) {
+        this.parseFlow('[');
+        this.peek().value = undefined;
+        this.pop();
+    }],
+
+    ['{', /^(.*)$/, function valueFlowMap(match) {
+        this.parseFlow('{');
         this.peek().value = undefined;
         this.pop();
     }],
@@ -689,7 +694,7 @@ function quote(s) {
 }
 
 var reserved = /^\s*(-|---|\.\.\.)\s+/;
-var flowChars = /^\s*([\}\],:])\s*/;
+var flowChars = /^\s*([\{\[\}\],:])\s*/;
 var quoted = /^\s*("(?:[^"\\]|\\.)*")\s*/;
 var single = /^\s*'((?:[^'])*)'\s*/;
 var unquoted = /^\s*([^\{\}\[\],:]+)\s*/;
