@@ -70,12 +70,16 @@ Context.methods({
         return true;
     },
     
+    nextToken: function () {
+        var parsed = parseToken(this.line);
+        var token = parsed.match;
+        this.line = strip(this.line.slice(parsed.len));
+        return token;
+    },
+    
     readDocs: function() {
         while (this.readLine()) {
-            // Parse and remove prefix token
-            var parsed = parseToken(this.line);
-            var token = parsed.match;
-            this.line = strip(this.line.slice(parsed.len));
+            var token = this.nextToken();
 
             for (var t = 0; t < tokens.length; t++) {
                 if (!(tokens[t][0] === true || tokens[t][0] == token)) {
@@ -201,27 +205,43 @@ Context.methods({
     },
     
     parseFlow: function (s) {
+        this.line = s;
         var isMap = s[0] == '{';
         var end = isMap ? '}' : ']';
         var parsed;
+        this.json += s[0];
+        s = s.slice(1);
         while (s[0] != end) {
-            this.json += s[0];
-            s = s.slice(1);
             if (isMap) {
                 parsed = parseToken(s);
                 this.string(parsed.match);
                 s = s.slice(parsed.len);
                 if (s[0] != ':') {
-                    this.error("Missing ':' separator.");
+                    this.error("Missing ':' character.");
                 }
                 this.json += ':';
                 s = s.slice(1);
             }
-            parsed = parseToken(s);
-            this.value(parsed.match);
-            s = s.slice(parsed.len);
+            if (/^\s*[\{\[]/.test(s)) {
+                this.parseFlow(s);
+            } else {
+                parsed = parseToken(s);
+                this.value(parsed.match);
+                s = s.slice(parsed.len);
+            }
+            if (s.length == 0) {
+                if (!this.readLine()) {
+                    this.error("Missing '" + end + "' character.");
+                }
+                s = this.line;
+                continue;
+            }
+            if (s[0] == ',') {
+                this.json += ',';
+            }
         }
         this.json += end;
+        this.line = s.slice(1);
     },
 
     error: function (message) {
@@ -253,7 +273,7 @@ var tokens = [
         this.push({state: 'value', value: 'null'});
     }],
 
-    [true, /^: +([\{\[].+)$/, function taggedFlow(match, token) {
+    [true, /^: +([\{\[].*)$/, function taggedFlow(match, token) {
         this.ensureContainer('{', '}');
         this.string(token);
         this.json += ':';
@@ -305,28 +325,22 @@ function quote(s) {
 }
 
 var reserved = /^\s*(-|---|\.\.\.)\s+/;
+var flowChars = /^\s*([\{\[\}\],:])\s*/;
 var quoted = /^\s*("(?:[^"\\]|\\.)*")\s*/;
 var single = /^\s*'((?:[^'])*)'\s*/;
-var unquoted = /^\s*([^{}\[\],:]+)\s*/;
+var unquoted = /^\s*([^\{\}\[\],:]+)\s*/;
+var tokenTypes = [reserved, flowChars, quoted, single, unquoted];
 
 function parseToken(s) {
-    var match;
-    match = reserved.exec(s);
-    if (match) {
-        return {len: match[0].length, match: match[1]};
-    }
-    match = quoted.exec(s);
-    if (match) {
-        return {len: match[0].length, match: match[1]};
-    }
-    match = single.exec(s);
-    if (match) {
-        var match2 = match[1].replace('\\', '\\\\').replace('"', '\\"');
-        return {len: match[0].length, match: '"' + match2 + '"'};
-    }
-    match = unquoted.exec(s);
-    if (match) {
-        return {len: match[0].length, match: strip(match[1])};
+    for (var i = 0; i < tokenTypes.length; i++) {
+        var pattern = tokenTypes[i];
+        var match = pattern.exec(s);
+        if (match) {
+            if (pattern == single) {
+                match[1] = '"' + match[1].replace('\\', '\\\\').replace('"', '\\"') + '"';
+            }
+            return {len: match[0].length, match: strip(match[1])};
+        }
     }
     return {len: 0, match: ''};
 }
