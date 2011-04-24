@@ -668,13 +668,6 @@ function quote(s) {
     return '"' + s.replace(/"/g, '\\"') + '"';
 }
 
-function token(s, i) {
-    if (i == undefined) {
-        i = 0;
-    }
-    var match = /\s*([^\s:,\{\[\}\]\"])|"((?:[^\"]+|\\.)*)"/.exec(s);
-}
-
 var reserved = /^\s*(-|---|\.\.\.)\s+/;
 var quoted = /^\s*("(?:[^"\\]|\\.)*")\s*/;
 var single = /^\s*'((?:[^'])*)'\s*/;
