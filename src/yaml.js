@@ -30,8 +30,10 @@ function stringify(obj) {
     return JSON.stringify(obj);
 }
 
-function Context() {
+function Context(s) {
     this.docs = [];
+    this.lines = s.split('\n');
+    this.lineNumber = 0;
     this.initDoc();
 }
 
@@ -50,8 +52,49 @@ Context.methods({
         this.currentIndent = -1;
         this.push({state: 'value', value: 'null'});
     },
+    
+    readLine: function () {
+        while (true) {
+            if (this.lineNumber >= this.lines.length) {
+                return false;
+            }
+            this.line = this.lines[this.lineNumber++];
+            var spaces = /^ */.exec(this.line)[0].length;
+            this.setIndent(spaces);
+            this.line = this.line.slice(spaces);
+            this.line = strip(this.line.replace(/#.*$/, ''));
+            if (this.line.length != 0) {
+                break;
+            }
+        }
+        return true;
+    },
+    
+    readDocs: function() {
+        while (this.readLine()) {
+            // Parse and remove prefix token
+            var parsed = parseToken(this.line);
+            var token = parsed.match;
+            this.line = strip(this.line.slice(parsed.len));
 
-    indent: function (n) {
+            for (var t = 0; t < tokens.length; t++) {
+                if (!(tokens[t][0] === true || tokens[t][0] == token)) {
+                    continue;
+                }
+                var match = tokens[t][1].exec(this.line);
+                if (!match) {
+                    continue;
+                }
+                var fn = tokens[t][2];
+                console.log(types.getFunctionName(fn));
+                fn.call(this, match, token);
+                break;
+            }
+        }
+        this.endDoc();
+    },
+
+    setIndent: function (n) {
         this.currentIndent = n;
         while (this.peek().indent > n) {
             this.pop();
@@ -248,47 +291,9 @@ var tokens = [
 ];
 
 function jsonFromYaml(s) {
-    var context = new Context();
-    var lines = s.split('\n');
-
-    for (var i = 0; i < lines.length; i++) {
-        context.lineNumber = i + 1;
-        var line = lines[i];
-        context.indent(indent(line));
-        line = line.slice(context.indent);
-        line = line.replace(/#.*$/, '');
-        line = strip(line);
-        if (line.length == 0) {
-            continue;
-        }
-
-        // Parse and remove prefix token
-        var parsed = parseToken(line);
-        var token = parsed.match;
-        line = strip(line.slice(parsed.len));
-
-        for (var t = 0; t < tokens.length; t++) {
-            if (!(tokens[t][0] === true || tokens[t][0] == token)) {
-                continue;
-            }
-            var match = tokens[t][1].exec(line);
-            if (!match) {
-                continue;
-            }
-            var fn = tokens[t][2];
-            console.log(types.getFunctionName(fn));
-            fn.call(context, match, token);
-            break;
-        }
-    }
-    context.endDoc();
+    var context = new Context(s);
+    context.readDocs();
     return context.docs;
-}
-
-// Count the number of leading spaces.
-function indent(s) {
-    var match = /^ */.exec(s);
-    return match[0].length;
 }
 
 function strip(s) {
