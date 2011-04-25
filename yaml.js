@@ -723,7 +723,7 @@ function quote(s) {
 var reserved = /^\s*(-|---|\.\.\.)\s+/;
 var flowChars = /^\s*([\{\[\}\],:])\s*/;
 var quoted = /^\s*("(?:[^"\\]|\\.)*")\s*/;
-var single = /^\s*'((?:[^'])*)'\s*/;
+var single = /^\s*'((?:[^']|'')*)'\s*/;
 var unquoted = /^\s*([^\{\}\[\],:]+)\s*/;
 var tokenTypes = [reserved, flowChars, quoted, single, unquoted];
 
@@ -733,7 +733,9 @@ function parseToken(s) {
         var match = pattern.exec(s);
         if (match) {
             if (pattern == single) {
-                match[1] = '"' + match[1].replace('\\', '\\\\').replace('"', '\\"') + '"';
+                match[1] = '"' + match[1].replace("''", "'")
+                                         .replace('\\', '\\\\')
+                                         .replace('"', '\\"') + '"';
             }
             return {len: match[0].length, match: strip(match[1])};
         }

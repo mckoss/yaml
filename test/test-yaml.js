@@ -42,6 +42,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
             ['"single\\\\slash"', '"single\\\\slash"'],
             ["'single': 1", '"single"'],
             ["'single\"quote': 1", '"single\\"quote"'],
+            ["'single''s quote': 1", '"single\'s quote"'],
             ["'single\\slash'", '"single\\\\slash"']
         ];
         for (var i = 0; i < tests.length; i++) {
@@ -86,6 +87,7 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
     ut.test("spec tests", function () {
         delete specTests.tests['2.10'];  // Repeated nodes
         delete specTests.tests['2.19'];  // Non-decimal numbers
+        delete specTests.tests['2.26'];  // Ordered mappings
         testCases(specTests.tests);
     });
 
