@@ -52,7 +52,7 @@ Context.methods({
         this.currentIndent = -1;
         this.push({state: 'value', value: 'null'});
     },
-    
+
     readLine: function () {
         while (true) {
             if (this.lineNumber >= this.lines.length) {
@@ -69,7 +69,7 @@ Context.methods({
         }
         return true;
     },
-    
+
     nextToken: function () {
         while (true) {
             var parsed = parseToken(this.line);
@@ -83,7 +83,7 @@ Context.methods({
             }
         }
     },
-    
+
     readDocs: function() {
         while (this.readLine()) {
             var token = this.nextToken();
@@ -98,7 +98,7 @@ Context.methods({
                 }
                 var fn = tokens[t][2];
                 console.log(types.getFunctionName(fn));
-                fn.call(this, match, token);
+                fn.call(this, token);
                 break;
             }
         }
@@ -210,11 +210,11 @@ Context.methods({
         }
         this.json += quote(value);
     },
-    
+
     parseFlow: function (token) {
         var isMap = token == '{';
         var end = isMap ? '}' : ']';
-        
+
         this.json += token;
         token = this.nextToken();
 
@@ -233,12 +233,16 @@ Context.methods({
                 this.value(token);
             }
             token = this.nextToken();
+            if (token == end) {
+                this.json += end;
+                return;
+            }
             if (token == ',') {
                 this.json += ',';
-            } else if (token != end) {
-                this.error("Missing ',' character in flow.");
+                token = this.nextToken();
+                continue;
             }
-            token = this.nextToken();
+            this.error("Missing ',' character in flow.");
         }
         this.json += end;
     },
@@ -249,63 +253,66 @@ Context.methods({
 });
 
 var tokens = [
-    ['---', /^$/, function beginDoc(match) {
+    ['---', /^$/, function beginDoc() {
         this.beginDoc();
     }],
 
-    ['...', /^$/, function endDoc(match) {
+    ['...', /^$/, function endDoc() {
         this.endDoc();
     }],
 
-    ['-', /^([\{\[].*)$/, function sequenceFlow(match) {
+    ['-', /^[\{\[]/, function sequenceFlow() {
         this.ensureContainer('[', ']');
-        this.parseFlow(match[1]);
+        this.parseFlow(this.nextToken());
     }],
 
-    ['-', /^(.+)$/, function sequenceElement(match) {
+    ['-', /^(.+)$/, function sequenceElement() {
         this.ensureContainer('[', ']');
-        this.value(match[1]);
+        this.value(this.nextToken());
     }],
 
-    ['-', /^$/, function sequenceObject(match) {
+    ['-', /^$/, function sequenceObject() {
         this.ensureContainer('[', ']');
         this.push({state: 'value', value: 'null'});
     }],
 
-    [true, /^: +([\{\[].*)$/, function taggedFlow(match, token) {
+    [true, /^: +[\{\[]/, function taggedFlow(token) {
         this.ensureContainer('{', '}');
         this.string(token);
         this.json += ':';
-        this.parseFlow(match[1]);
+        this.nextToken();
+        this.parseFlow(this.nextToken());
     }],
 
-    [true, /^: +(.+)$/, function taggedElement(match, token) {
+    [true, /^: /, function taggedElement(token) {
         this.ensureContainer('{', '}');
         this.string(token);
         this.json += ':';
-        this.value(match[1]);
+        this.nextToken();
+        this.value(this.nextToken());
     }],
 
-    [true, /^:$/, function taggedObject(match, token) {
+    [true, /^:$/, function taggedObject(token) {
         this.ensureContainer('{', '}');
         this.string(token);
         this.json += ':';
+        this.nextToken();
         this.push({state: 'value', value: 'null'});
     }],
 
-    ['[', /^(.*)$/, function valueFlowSeq(match) {
+    ['[', /^(.*)$/, function valueFlowSeq() {
         this.parseFlow('[');
         this.peek().value = undefined;
         this.pop();
     }],
-    
-    ['{', /^(.*)$/, function valueFlowMap(match) {
+
+    ['{', /^(.*)$/, function valueFlowMap() {
         this.parseFlow('{');
         this.peek().value = undefined;
         this.pop();
     }],
 
-    [true, /^$/, function value(match, token) {
+    [true, /^$/, function value(token) {
         var top = this.peek();
         if (top.state != 'value') {
             this.error("Value seen when element expected.");
