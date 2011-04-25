@@ -60,14 +60,13 @@ Context.methods({
             }
             this.line = this.lines[this.lineNumber++];
             var spaces = /^ */.exec(this.line)[0].length;
-            this.setIndent(spaces);
             this.line = this.line.slice(spaces);
             this.line = strip(this.line.replace(/#.*$/, ''));
             if (this.line.length != 0) {
-                break;
+                this.setIndent(spaces);
+                return true;
             }
         }
-        return true;
     },
 
     nextToken: function () {
@@ -75,6 +74,7 @@ Context.methods({
             var parsed = parseToken(this.line);
             var token = parsed.match;
             this.line = this.line.slice(parsed.len);
+            this.linePos += parsed.len;
             if (token != '') {
                 return token;
             }
@@ -107,6 +107,7 @@ Context.methods({
 
     setIndent: function (n) {
         this.currentIndent = n;
+        this.linePos = n;
         while (this.peek().indent > n) {
             this.pop();
         }
@@ -248,7 +249,7 @@ Context.methods({
     },
 
     error: function (message) {
-        throw new Error("Line " + this.lineNumber + ": " + message);
+        throw new Error("Error on line " + this.lineNumber + ": " + message);
     }
 });
 
@@ -268,7 +269,26 @@ var tokens = [
 
     ['-', /^(.+)$/, function sequenceElement() {
         this.ensureContainer('[', ']');
-        this.value(this.nextToken());
+        var linePos = this.linePos;
+        var value = this.nextToken();
+        // Simple value
+        if (this.line.length == 0) {
+            this.value(value);
+            return;
+        }
+        // Nested map in a sequence - treat same as hanging sequence
+        // with first map element read.
+        if (this.line[0] == ':') {
+            this.push({state: 'value', value: 'null'});
+            this.setIndent(linePos);
+            this.ensureContainer('{', '}');
+            this.string(value);
+            this.json += ':';
+            this.nextToken();
+            this.value(this.nextToken());
+            return;
+        }
+        this.error("Invalid sequence element.");
     }],
 
     ['-', /^$/, function sequenceObject() {
