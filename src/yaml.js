@@ -75,12 +75,23 @@ Context.methods({
             var token = parsed.match;
             this.line = this.line.slice(parsed.len);
             this.linePos += parsed.len;
+            if (token[0] == '|' || token[0] == '>') {
+                return this.readTextBlock(token[0] == '>');
+            }
             if (token != '') {
                 return token;
             }
             if (!this.readLine()) {
                 return '';
             }
+        }
+    },
+
+    // Multi-line text block
+    readTextBlock: function (folded) {
+        var s = this.line;
+        if (!this.readLine()) {
+            return s;
         }
     },
 
@@ -360,8 +371,9 @@ var reserved = /^\s*(-|---|\.\.\.)\s+/;
 var flowChars = /^\s*([\{\[\}\],:])\s*/;
 var quoted = /^\s*("(?:[^"\\]|\\.)*")\s*/;
 var single = /^\s*'((?:[^']|'')*)'\s*/;
+var blockChars = /^\s*([\|>][\-\+]?)\s*/;
 var unquoted = /^\s*([^\{\}\[\],:]+)\s*/;
-var tokenTypes = [reserved, flowChars, quoted, single, unquoted];
+var tokenTypes = [reserved, flowChars, quoted, single, blockChars, unquoted];
 
 function parseToken(s) {
     for (var i = 0; i < tokenTypes.length; i++) {

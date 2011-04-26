@@ -77,7 +77,11 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         "flow map": {yaml: "{one: two}",
                      data: {"one": "two"}},
         "flow in sequence": {yaml: "- [one, two]\n- three",
-                             data: [["one", "two"], "three"]}
+                             data: [["one", "two"], "three"]},
+        "literal": {yaml: "literal", data: "literal"},
+        "block literal": {yaml: "|\nblock\nliteral", data: "block\nliteral"},
+        "indented literal": {yaml: "|\n  indented\n  literal", data: "indented\nliteral"},
+        "folded literal": {yaml: ">\n  folded\n  literal", data: "folded literal"}
     };
 
     ut.test("parse", function () {
