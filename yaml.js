@@ -418,19 +418,25 @@ Context.methods({
     },
 
     readLine: function () {
-        while (true) {
-            if (this.lineNumber >= this.lines.length) {
-                return false;
-            }
-            this.line = this.lines[this.lineNumber++];
-            var spaces = /^ */.exec(this.line)[0].length;
-            this.line = this.line.slice(spaces);
+        while (this.readRawLine()) {
             this.line = strip(this.line.replace(/#.*$/, ''));
             if (this.line.length != 0) {
-                this.setIndent(spaces);
+                this.setIndent(this.spaces);
                 return true;
             }
         }
+        return false;
+    },
+
+    readRawLine: function () {
+        if (this.lineNumber >= this.lines.length) {
+            return false;
+        }
+        this.line = this.lines[this.lineNumber++];
+        var match = /^( *)(.*)$/.exec(this.line);
+        this.spaces = match[1].length;
+        this.line = match[2];
+        return true;
     },
 
     nextToken: function () {
@@ -454,9 +460,22 @@ Context.methods({
     // Multi-line text block
     readTextBlock: function (folded) {
         var s = this.line;
-        if (!this.readLine()) {
-            return s;
+        var sep = '';
+        var blockIndent;
+        while (this.readRawLine()) {
+            if (s != '') {
+                sep = folded ? ' ' : '\n';
+            }
+            if (blockIndent == undefined && this.line.length != 0) {
+                blockIndent = this.spaces;
+            }
+            if (this.spaces < blockIndent) {
+                this.lineNumber--;
+                return s;
+            }
+            s += sep + repeat(' ', this.spaces - blockIndent) + this.line;
         }
+        return s;
     },
 
     readDocs: function() {
@@ -707,7 +726,7 @@ var tokens = [
         this.pop();
     }],
 
-    [true, /^$/, function value(token) {
+    [true, /^/, function value(token) {
         var top = this.peek();
         if (top.state != 'value') {
             this.error("Value seen when element expected.");
@@ -729,6 +748,10 @@ function strip(s) {
 
 function quote(s) {
     return '"' + s.replace(/"/g, '\\"') + '"';
+}
+
+function repeat(s, times) {
+    return new Array(times + 1).join(s);
 }
 
 var reserved = /^\s*(-|---|\.\.\.)\s+/;

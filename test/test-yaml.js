@@ -79,9 +79,10 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         "flow in sequence": {yaml: "- [one, two]\n- three",
                              data: [["one", "two"], "three"]},
         "literal": {yaml: "literal", data: "literal"},
-        "block literal": {yaml: "|\nblock\nliteral", data: "block\nliteral"},
-        "indented literal": {yaml: "|\n  indented\n  literal", data: "indented\nliteral"},
-        "folded literal": {yaml: ">\n  folded\n  literal", data: "folded literal"}
+        "block literal": {yaml: "|\nblock\nliteral", data: '"block\nliteral"'},
+        "indented literal": {yaml: "|\n  indented\n  literal", data: '"indented\nliteral"'},
+        "folded literal": {yaml: ">\n  folded\n  literal", data: 'folded literal'},
+        "multi-line element": {yaml: "- this is\n  a multi-line", data: ["this is a multi-line"]}
     };
 
     ut.test("parse", function () {
