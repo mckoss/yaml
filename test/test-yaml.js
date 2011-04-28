@@ -82,11 +82,23 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
         "block literal": {yaml: "|\nblock\nliteral", data: '"block\nliteral"'},
         "indented literal": {yaml: "|\n  indented\n  literal", data: '"indented\nliteral"'},
         "folded literal": {yaml: ">\n  folded\n  literal", data: 'folded literal'},
-        "multi-line element": {yaml: "- this is\n  a multi-line", data: ["this is a multi-line"]}
+        "multi-line element": {yaml: "- this is\n  a multi-line",
+                               data: ["this is a multi-line"]},
+        "multi-line map": {yaml: "one: this is\n  a multi-line",
+                           data: {"one": "this is a multi-line"}}
+    };
+
+    var errorTests = {
+        "bad mapping value": {yaml: "one: two: three", error: "bad"},
+        "bad multiline mapping": {yaml: "one: two\n  three: four", error: "bad"}
     };
 
     ut.test("parse", function () {
         testCases(simpleTests);
+    });
+
+    ut.test("parse errors", function () {
+        testCases(errorTests);
     });
 
     ut.test("spec tests", function () {
@@ -109,10 +121,19 @@ namespace.module('org.startpad.yaml.test', function (exports, require) {
             try {
                 data = yaml.parse(test.yaml)[0];
             } catch (e) {
-                ut.ok(false, name + ": Exception: " + e.message);
+                if (test.error) {
+                    ut.ok(e.message.indexOf(test.error) != -1, name + ': ' + e.message +
+                          " (" + test.error + " expected)");
+                } else {
+                    ut.ok(false, name + ": Exception: " + e.message);
+                }
                 continue;
             }
-            ut.deepEqual(data, test.data, name);
+            if (test.error) {
+                ut.ok(false, "Expected error, " + test.error);
+            } else {
+                ut.deepEqual(data, test.data, name);
+            }
         }
     }
 });
